@@ -32,7 +32,7 @@ NidaanKosha is the largest publicly available Indian lab-investigation dataset, 
 - **MySQL 8.0** — structured warehouse for Power BI
 - **XGBoost + SHAP** — predictive modeling + explainability
 - **MySQL 8.0 + CSV export** — BI delivery layer
-- **Power BI Desktop** — dashboard spec ready, build in progress
+- **Power BI Desktop** — dashboard layer
 - **JupyterLab** — exploratory environment
 
 > **Status:** pipeline, modeling, and explainability are complete and
