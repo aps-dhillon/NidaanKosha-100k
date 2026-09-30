@@ -1,0 +1,78 @@
+# Environment
+.env
+*.env.local
+
+# Data
+data/raw/
+*.duckdb
+*.duckdb.wal
+*.parquet
+*.tsv
+
+# CSV exports are mostly too large to commit (patients.csv 4.9 MB,
+# disease_cohorts.csv 12 MB, patient_features.csv 30 MB). Exclude them
+# by pattern rather than by directory, so the small allowlist below
+# can re-admit the ones the README actually references.
+*.csv
+
+# MySQL
+*.sql.gz
+*.dump
+
+# Models
+models/*.joblib
+models/*.pkl
+models/*.json
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Power BI
+app/*.pbix
+app/*.pbit
+
+# Reports
+# figures are explicitly allowed back in near the top of this file
+reports/figures/*.jpg
+reports/figures/*.svg
+!reports/figures/.gitkeep
+
+# --- Portfolio allowlist -------------------------------------------------
+# Re-admit the small artifacts the README links to. Each is under ~1 MB.
+# Order matters: these must come AFTER the blanket patterns above.
+!reports/figures/*.png
+!data/processed/model_metrics.csv
+!data/processed/lab_coverage.csv
+!data/processed/prevalence_by_demographics.csv
+!data/processed/disease_cooccurrence.csv

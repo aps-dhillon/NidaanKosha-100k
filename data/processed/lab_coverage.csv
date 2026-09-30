@@ -1,0 +1,38 @@
+feature,label,n_present,pct_present
+hemoglobin,Hemoglobin,99570,99.6
+total_cholesterol,Total Cholesterol,99625,99.6
+hematocrit,Hematocrit,98112,98.1
+rbc,RBC,97845,97.8
+wbc,WBC,97569,97.6
+mcv,MCV,97325,97.3
+triglycerides,Triglycerides,96796,96.8
+mch,MCH,96357,96.4
+platelet,Platelet,96085,96.1
+hdl,HDL,95615,95.6
+ldl,LDL,94796,94.8
+creatinine,Creatinine,92703,92.7
+mchc,MCHC,89880,89.9
+alt_sgpt,ALT (SGPT),89069,89.1
+ast_sgot,AST (SGOT),86065,86.1
+uric_acid,Uric Acid,83742,83.7
+rdw,RDW,83401,83.4
+bilirubin_total,Bilirubin Total,83110,83.1
+albumin,Albumin,82514,82.5
+total_protein,Total Protein,82437,82.4
+tsh,TSH,81865,81.9
+alkaline_phosphatase,ALP,79709,79.7
+non_hdl_cholesterol,Non-HDL,74652,74.7
+hba1c,HbA1c,72190,72.2
+bun,BUN,69219,69.2
+calcium,Calcium,60157,60.2
+iron,Iron,47809,47.8
+vitamin_b12,Vitamin B12,46031,46.0
+sodium,Sodium,45890,45.9
+potassium,Potassium,45775,45.8
+vitamin_d,Vitamin D,45518,45.5
+chloride,Chloride,40752,40.8
+egfr,eGFR,39781,39.8
+tibc,TIBC,37524,37.5
+ferritin,Ferritin,7220,7.2
+bicarbonate,Bicarbonate,3170,3.2
+glucose,Glucose,0,0.0

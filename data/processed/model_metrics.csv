@@ -1,0 +1,11 @@
+condition,label,n_train,n_test,prevalence_pct,auc_roc,auc_pr,accuracy,f1,best_iteration
+has_low_hdl,Low HDL,79998,20000,48.39,0.9988,0.9987,0.9825,0.9819,399
+has_high_ldl,High LDL,79998,20000,25.17,0.986,0.9627,0.9428,0.8921,399
+has_high_cholesterol,High Cholesterol,79998,20000,31.16,0.9833,0.9652,0.9397,0.9062,399
+has_high_triglycerides,High Triglycerides,79998,20000,39.49,0.9459,0.9271,0.8834,0.8534,399
+has_diabetes,Diabetes,79998,20000,25.18,0.9008,0.7384,0.8071,0.6867,396
+has_anemia,Anemia,79998,20000,28.43,0.8798,0.7684,0.8042,0.6908,398
+has_ckd,CKD,79998,20000,10.2,0.8567,0.4816,0.8248,0.4509,399
+has_liver_issue,Liver Issue,79998,20000,20.08,0.8053,0.5259,0.7483,0.523,399
+has_prediabetes,Prediabetes,79998,20000,21.1,0.8025,0.4881,0.6858,0.5138,399
+has_thyroid_disorder,Thyroid Disorder,79998,20000,23.58,0.729,0.4294,0.6399,0.4745,399

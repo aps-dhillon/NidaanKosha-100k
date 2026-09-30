@@ -1,0 +1,345 @@
+================================================================================
+INDIA HEALTH ATLAS - CAPSTONE PROJECT
+WHAT WE WISHED TO DO & HOW WE ACHIEVED IT
+================================================================================
+
+PROJECT: NidaanKosha-100k Indian Population Health Atlas
+DATE:    June 2026
+AUTHOR:  Abhay (data engineer / analyst)
+
+
+================================================================================
+PART 1: WHAT WE WISHED TO DO
+================================================================================
+
+THE BIG PICTURE
+---------------
+We wanted to build a complete data science pipeline on the NidaanKosha-100k
+dataset (100,000 Indian patients, 6.8 million lab readings) that would:
+
+  1. Ingest and clean real-world medical data at scale
+  2. Define clinically meaningful disease cohorts using standard cutoffs
+  3. Discover which diseases cluster together in this Indian population
+  4. Train machine learning models to predict each disease from lab values
+  5. Make those predictions explainable with SHAP
+  6. Deliver everything in an interactive Power BI dashboard
+  7. Be portfolio-grade: clean code, good architecture, documented
+
+WHY THIS PROJECT
+----------------
+- Most healthcare data-science portfolios rely on US/European datasets
+  (MIMIC, CMS, eICU). NidaanKosha is the largest publicly available
+  Indian lab dataset, so this fills a real gap.
+- The user is a student building a capstone, so the project needed to
+  demonstrate both technical depth and clear communication.
+- We wanted it to be reproducible: anyone with the dataset and these
+  scripts should be able to rebuild everything from scratch.
+
+THE 11 PHASES WE PLANNED
+-------------------------
+Phase 0:  Set up Python environment (Anaconda, conda, packages)
+Phase 1:  Scaffold project structure (folders, gitignore, README)
+Phase 2:  Build data architecture (DuckDB + MySQL + CSV exports)
+Phase 3:  SQL EDA in DuckDB (demographics, disease definitions)
+Phase 4:  Python EDA (skipped - heatmaps in Phase 7 covered it)
+Phase 5:  Data cleaning and value parsing
+Phase 6:  Feature engineering (wide format, derived ratios)
+Phase 7:  Prevalence atlas + co-occurrence analysis
+Phase 8:  XGBoost modeling per condition
+Phase 9:  SHAP explainability (global + per-patient)
+Phase 10: Power BI dashboard (4 pages)
+Phase 11: Portfolio polish (README, blog, GitHub)
+
+
+================================================================================
+PART 2: HOW WE ACHIEVED EACH PHASE
+================================================================================
+
+
+PHASE 0: ENVIRONMENT SETUP
+---------------------------
+WISH:    Have a clean, isolated Python environment with all needed packages.
+HOW:     Installed Anaconda, created conda env named "nidaan" with Python 3.11.
+         Installed 18+ packages: pandas, polars, pyarrow, duckdb, sqlalchemy,
+         pymysql, xgboost, shap, matplotlib, seaborn, etc. Registered the
+         kernel as "Python (nidaan)" in Jupyter.
+EVIDENCE: conda env "nidaan" working. Python 3.11.15. DuckDB 1.5.3.
+          All Jupyter notebooks run with the right kernel.
+
+
+PHASE 1: PROJECT SCAFFOLDING
+-----------------------------
+WISH:    Have a clean, professional project structure that any developer
+         could navigate.
+HOW:     Created 9 folders: data/raw, data/processed, mysql, notebooks, src,
+         app, reports/figures, models, docs. Created .env, .gitignore,
+         requirements.txt, README.md, .gitkeep files in empty dirs.
+EVIDENCE: Project root is E:\NidaanKosha-100k. Full layout documented in
+          README.md and PROJECT_GUIDE.md.
+
+
+PHASE 2: DATA ARCHITECTURE
+--------------------------
+WISH:    Build a 3-layer data pipeline (parquet source, DuckDB engine,
+         MySQL/CSV delivery) following modern lakehouse pattern.
+HOW:     Downloaded both parquet files (175 MB total, SHA256 verified).
+         Built DuckDB v_labs view (6.8M rows, 11 columns) with persistent
+         loinc_dict table. Created MySQL nidaan_kosha database with user
+         nidaan_user. Loaded 3 small BI tables (patients 100K, disease_cohorts
+         100K, prevalence 100). Exported 4 CSVs as Power BI fallback.
+EVIDENCE: data/nidaan.duckdb (5.5 MB). MySQL 4 tables verified.
+          data/processed/ has 5 CSVs (17 MB total).
+DECISION: We did NOT load the full 6.8M lab_results to MySQL. Reasoning:
+          Power BI only needs the 3 curated tables. Loading 6.8M rows would
+          take 5-10 min and waste 700 MB for zero benefit.
+
+
+PHASE 3: SQL EDA IN DUCKDB
+---------------------------
+WISH:    Define 10 disease cohorts using clinical cutoffs and compute
+         prevalence across age x gender strata.
+HOW:     Wrote 70-code LOINC dictionary mapping 9 clinical categories.
+         Pivoted v_labs to 1 row per patient with key lab values. Wrote
+         CASE WHEN logic for each disease. Computed overall + stratified
+         prevalence.
+EVIDENCE: DuckDB table disease_cohorts (100K x 24). 10 has_* columns
+          all populated. Overall prevalence:
+            Low HDL 48.4%, High Trig 39.5%, High Chol 31.2%,
+            Anemia 28.4%, Diabetes 25.2%, High LDL 25.2%,
+            Thyroid 23.6%, Prediabetes 21.1%, Liver 20.1%, CKD 10.2%
+
+
+PHASE 4: PYTHON EDA
+--------------------
+WISH:    Visualize distributions and demographic patterns in Python.
+HOW:     Combined into Phase 7 (heatmaps) - no separate scripts needed.
+EVIDENCE: 01_prevalence_heatmap.png, 02_cooccurrence_heatmap.png.
+
+
+PHASE 5 + 6: FEATURE ENGINEERING
+--------------------------------
+WISH:    Convert 6.8M long-format lab rows into a 1-row-per-patient wide
+         table that machine learning can use.
+HOW:     Pivoted 37 key lab tests to columns using MAX(CASE WHEN loinc=X).
+         Added 6 derived ratios (TC/HDL, LDL/HDL, BUN/Cr, AST/ALT, Trig/HDL,
+         Non-HDL). Encoded gender as is_male. Counted tests per patient.
+         Attached 10 disease labels from disease_cohorts.
+EVIDENCE: patient_features.parquet (8.8 MB, 99998 rows, 61 columns).
+          lab_coverage.csv shows top labs at 99.6% availability, bottom
+          (bicarbonate) at 3.2%.
+
+
+PHASE 7: PREVALENCE ATLAS + CO-OCCURRENCE
+-----------------------------------------
+WISH:    Find which diseases are most associated with each other in this
+         population. Quantify the strength of each association.
+HOW:     Built stratified heatmap of condition x age x gender. Self-joined
+         disease_cohorts on document_id to find pairs of co-occurring
+         conditions. Computed lift = P(A and B) / (P(A) * P(B)).
+EVIDENCE: 01_prevalence_heatmap.png shows liver 3-4x higher in males,
+          anemia 36-55% in females.
+          02_cooccurrence_heatmap.png shows top associations:
+            High Chol x High LDL    lift 2.83  (same molecule)
+            High Chol x High Trig   lift 1.45  (atherogenic)
+            CKD x Diabetes          lift 1.42  (diabetic nephropathy)
+            Trig x Liver            lift 1.32  (NAFLD pattern)
+            Anemia x CKD            lift 1.29  (CKD-induced)
+
+
+PHASE 8: XGBoost MODELING
+-------------------------
+WISH:    Train a machine learning model to predict each disease from
+         patient demographics + lab values.
+HOW:     Wrote src/modeling.py that trains one XGBClassifier per condition
+         using train_test_split (stratified), early_stopping_rounds=30,
+         scale_pos_weight for class imbalance, eval_metric=auc.
+         CRITICAL: Discovered and fixed a data leakage bug.
+EVIDENCE: 10 saved models in models/xgb_*.json (~2.5-2.7 MB each).
+          Final leaderboard (after leakage fix):
+            Condition          Prev%   AUC     F1
+            Low HDL            48.4%   0.999   0.982
+            High LDL           25.2%   0.986   0.892
+            High Cholesterol   31.2%   0.983   0.906
+            High Triglycerides 39.5%   0.946   0.853
+            Diabetes           25.2%   0.901   0.687
+            Anemia             28.4%   0.880   0.691
+            CKD                10.2%   0.857   0.451
+            Liver Issue        20.1%   0.805   0.523
+            Prediabetes        21.1%   0.803   0.514
+            Thyroid Disorder   23.6%   0.729   0.474
+
+
+THE DATA LEAKAGE FIX (most important learning in this phase)
+------------------------------------------------------------
+WISH PROBLEM: First XGBoost run showed AUC = 1.000 for every condition.
+              That is impossible in real data.
+ROOT CAUSE:   The disease labels are deterministic functions of the lab
+              values. For example, has_anemia is defined as
+              hemoglobin < 12 (female) or < 13 (male). The model had
+              hemoglobin as a feature, so it could perfectly predict
+              the label by reading the threshold.
+FIX:          Created LEAKY_FEATURES dict in modeling.py that maps each
+              condition to the lab values used to define it. Excluded
+              those features per-condition. Re-ran - got realistic AUCs.
+LESSON:       AUC = 1.0 is a red flag, not a success. Always check if
+              your features contain the answer.
+
+
+PHASE 9: SHAP EXPLAINABILITY
+----------------------------
+WISH:    Explain WHY the model predicts a disease for a given patient.
+         Not just "high risk" but "high risk BECAUSE creatinine is
+         elevated AND BUN is high".
+HOW:     Used shap.TreeExplainer on 4 conditions (CKD, Diabetes, Anemia,
+         Liver Issue). Generated 3 figure types per condition:
+           - Bar plot: top 15 global features by mean absolute SHAP
+           - Beeswarm: feature value vs SHAP value (direction of effect)
+           - Waterfall: one positive + one negative patient breakdown
+EVIDENCE: 16 figures in reports/figures/ (4 conditions x 4 plot types).
+          files: 04_shap_bar_*.png, 05_shap_beeswarm_*.png,
+                 06_shap_waterfall_*.png
+CRITICAL FIX: First SHAP run failed with "expected 48 features, got 41".
+               Cause: the model was trained on the leakage-excluded
+               feature subset, but SHAP was loading all 48 features.
+               Fix: imported get_feature_columns(condition=...) from
+               modeling.py so SHAP uses the SAME features the model saw.
+
+
+PHASE 10: POWER BI DASHBOARD
+----------------------------
+WISH:    Build an interactive 4-page dashboard for non-technical users.
+HOW:     Initially planned to use Power BI's MySQL database connector.
+         Hit a wall: the .NET connector could not authenticate to MySQL
+         8.0 (caching_sha2_password incompatibility). Tried installing
+         MySQL Connector/NET 8.4 and copying MySql.Data.dll to Power BI
+         bin folder. Still failed.
+PIVOT:    Switched to Option B - export the 4 MySQL tables to CSVs and
+          import those into Power BI. Took 2 minutes. Worked first try.
+CURRENT STATE: 4 CSVs imported. 1:1 relationship between patients and
+               disease_cohorts. Report view open on Page 1
+               "Executive Summary". 1 of 4 KPI cards added
+               (Total Patients = 100K).
+NEXT:        Add 3 more KPI cards, then bar chart, donut, slicer.
+             Then Pages 2, 3, 4 (atlas, co-occurrence, drill-down).
+
+
+PHASE 11: PORTFOLIO POLISH (PENDING)
+------------------------------------
+WHAT'S DONE:
+  - PROJECT_GUIDE.md (20 KB, 400+ lines, full runbook)
+  - README.md (initial, needs final update with results)
+WHAT'S LEFT:
+  - Update README with final leaderboard + figures + Power BI screenshots
+  - Write a blog post (Medium / dev.to)
+  - Push to GitHub with clean commit history
+  - Take screenshots of all 4 Power BI pages
+
+
+================================================================================
+PART 3: TOTAL ARTIFACTS PRODUCED
+================================================================================
+
+CODE
+----
+  run_pipeline.py              top-level orchestrator (subprocess per phase)
+  mysql/01a_rebuild_duckdb.py  persist loinc_dict + v_labs
+  mysql/01c_load_lean_mysql.py load 3 BI tables to MySQL
+  mysql/01d_add_cooccurrence.py add 4th MySQL table
+  mysql/01e_export_to_csv.py   export MySQL to CSVs
+  src/feature_engineering.py   wide pivot + derived features
+  src/modeling.py              XGBoost per condition (with leakage fix)
+  src/shap_analysis.py         SHAP bar + beeswarm + waterfall
+  src/cooccurrence.py          pairwise co-occurrence + lift
+  src/cooccurrence_heatmap.py  co-occurrence visualization
+
+DATA
+----
+  data/raw/*.parquet                 175 MB (source, gitignored)
+  data/nidaan.duckdb                 5.5 MB (DuckDB warehouse)
+  data/processed/patient_features.*  8.8 MB parquet, 30 MB CSV
+  data/processed/patients.csv        4.9 MB
+  data/processed/disease_cohorts.csv 12 MB
+  data/processed/prevalence_*.csv    4 KB
+  data/processed/cooccurrence.csv    2.6 KB
+  data/processed/lab_coverage.csv    lab availability report
+  data/processed/model_metrics.csv   XGBoost leaderboard
+
+FIGURES (19 total)
+------------------
+  01_prevalence_heatmap.png      age x gender x condition heatmap
+  02_cooccurrence_heatmap.png    pairwise disease associations
+  03_xgb_roc_curves.png          all 10 model ROC curves
+  04_shap_bar_*.png              4 global feature importance plots
+  05_shap_beeswarm_*.png         4 SHAP value distribution plots
+  06_shap_waterfall_*.png        8 per-patient explanation plots
+
+MODELS (10)
+-----------
+  models/xgb_anemia.json
+  models/xgb_diabetes.json
+  models/xgb_prediabetes.json
+  models/xgb_high_cholesterol.json
+  models/xgb_high_triglycerides.json
+  models/xgb_low_hdl.json
+  models/xgb_high_ldl.json
+  models/xgb_thyroid_disorder.json
+  models/xgb_liver_issue.json
+  models/xgb_ckd.json
+
+POWER BI
+--------
+  app/POWER_BI_BUILD_GUIDE.md   full spec for 4 pages + DAX measures
+  app/india_health_atlas.pbix   (to be created)
+
+
+================================================================================
+PART 4: KEY LEARNINGS
+================================================================================
+
+1. THE 3-LAYER LAKEHOUSE PATTERN
+   Bronze (parquet) -> Silver (DuckDB) -> Gold (MySQL/CSV).
+   Don't load raw data to your serving database. Use a fast analytical
+   engine for ETL and feature engineering, then ship only curated
+   aggregates to the BI tool.
+
+2. DATA LEAKAGE IS THE #1 ML TRAP
+   If your features contain the answer, your model is cheating. Always
+   check for AUC = 1.0 and audit whether labels are functions of features.
+
+3. ALWAYS USE A FRESH PYTHON PROCESS PER PHASE
+   exec() in the same process accumulates memory. subprocess.run()
+   releases it on exit. For multi-step data pipelines, always subprocess.
+
+4. NULL VALUES IN MEDICAL DATA ARE MEANINGFUL
+   null != 0 != missing. In labs, null often means "not tested".
+   Imputing away that signal biases the analysis.
+
+5. WHEN A CONNECTOR FAILS, PIVOT FAST
+   We lost 15 minutes fighting the MySQL .NET connector, then spent
+   2 minutes exporting CSVs. The CSV path was simpler, faster, and
+   gave the same end result. Don't sink cost into workarounds.
+
+6. START WITH THE END IN MIND
+   Every technical choice (which tables to load, which features to
+   engineer, which visuals to build) was driven by what Power BI
+   actually needs. The 6.8M raw rows were a stepping stone, not
+   the destination.
+
+
+================================================================================
+PROJECT STATUS: ~85% COMPLETE
+================================================================================
+
+Remaining work:
+  - Finish Power BI 4 pages          (~60 min)
+  - Update README with results       (~20 min)
+  - Write blog post                  (~30 min)
+  - Push to GitHub                   (~10 min)
+  - Total:                           ~2 hours
+
+The intellectual work (data engineering, ML, SHAP) is done. The rest
+is delivery and presentation.
+
+================================================================================
+END OF DOCUMENT
+================================================================================
