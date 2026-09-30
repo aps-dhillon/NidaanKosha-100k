@@ -31,13 +31,19 @@ NidaanKosha is the largest publicly available Indian lab-investigation dataset, 
 - **Polars / Pandas** — dataframe manipulation
 - **MySQL 8.0** — structured warehouse for Power BI
 - **XGBoost + SHAP** — predictive modeling + explainability
-- **Power BI Desktop** — interactive dashboard (4 pages)
-- **JupyterLab** — primary development environment
+- **MySQL 8.0 + CSV export** — BI delivery layer
+- **Power BI Desktop** — dashboard spec ready, build in progress
+- **JupyterLab** — exploratory environment
+
+> **Status:** pipeline, modeling, and explainability are complete and
+> reproducible. The Power BI dashboard is specified in
+> [`app/POWER_BI_BUILD_GUIDE.md`](app/POWER_BI_BUILD_GUIDE.md) but not yet
+> built — treat that item as in progress, not delivered.
 
 ## Project structure
 
 ```
-nidaan-atlas/
+NidaanKosha-100k/
 ├── data/
 │   ├── raw/                      # source parquet files (gitignored)
 │   ├── processed/                # cleaned parquet outputs
@@ -111,6 +117,63 @@ Full step-by-step runbook with every command, decision, and lesson learned:
 | High LDL × Prediabetes | 1.22 | 6,467 | Pre-atherogenic state |
 
 Most common absolute pair: **High triglycerides × Low HDL** (n=23,093) — core of metabolic syndrome.
+
+## Results — Prevalence Atlas & Co-occurrence
+
+### Prevalence by age × gender (heatmap)
+![Prevalence heatmap](reports/figures/01_prevalence_heatmap.png)
+
+### Disease co-occurrence (pairwise lift)
+![Co-occurrence heatmap](reports/figures/02_cooccurrence_heatmap.png)
+
+## Results — XGBoost Performance (10 conditions)
+
+The models were trained with strict leakage prevention — lab values that
+directly define each label are excluded per condition. Full metrics:
+[`data/processed/model_metrics.csv`](data/processed/model_metrics.csv).
+
+![XGBoost ROC curves](reports/figures/03_xgb_roc_curves.png)
+
+| Condition | AUC | F1 | Prevalence |
+|---|---|---|---|
+| Low HDL | 0.999 | 0.982 | 48.4% |
+| High LDL | 0.986 | 0.892 | 25.2% |
+| High Cholesterol | 0.983 | 0.906 | 31.2% |
+| High Triglycerides | 0.946 | 0.853 | 39.5% |
+| Diabetes | 0.901 | 0.687 | 25.2% |
+| Anemia | 0.880 | 0.691 | 28.4% |
+| CKD | 0.857 | 0.451 | 10.2% |
+| Liver Issue | 0.805 | 0.523 | 20.1% |
+| Prediabetes | 0.803 | 0.514 | 21.1% |
+| Thyroid Disorder | 0.729 | 0.474 | 23.6% |
+
+## Results — SHAP Explainability
+
+SHAP bar (global feature importance), beeswarm (direction + magnitude), and
+waterfall (per-patient explanations) are generated for CKD, Diabetes,
+Anemia, and Liver Issue.
+
+| Condition | Global importance | Feature effects | Patient-level |
+|---|---|---|---|
+| CKD | ![CKD SHAP bar](reports/figures/04_shap_bar_ckd.png) | ![CKD SHAP beeswarm](reports/figures/05_shap_beeswarm_ckd.png) | [Waterfalls](reports/figures/) |
+| Diabetes | ![Diabetes SHAP bar](reports/figures/04_shap_bar_diabetes.png) | ![Diabetes SHAP beeswarm](reports/figures/05_shap_beeswarm_diabetes.png) | [Waterfalls](reports/figures/) |
+| Anemia | ![Anemia SHAP bar](reports/figures/04_shap_bar_anemia.png) | ![Anemia SHAP beeswarm](reports/figures/05_shap_beeswarm_anemia.png) | [Waterfalls](reports/figures/) |
+| Liver Issue | ![Liver SHAP bar](reports/figures/04_shap_bar_liver_issue.png) | ![Liver SHAP beeswarm](reports/figures/05_shap_beeswarm_liver_issue.png) | [Waterfalls](reports/figures/) |
+
+> Full set of per-patient waterfalls:
+> `06_shap_waterfall_*_{positive|negative}_case.png` in
+> [`reports/figures/`](reports/figures/)
+
+## Lessons & Design Choices
+
+- **Leakage prevention:** models are trained without the defining lab values
+  per condition — the fix that corrected an initial AUC=1.0 issue.
+- **Subprocess-isolated pipeline:** `run_pipeline.py` runs each phase in a
+  separate subprocess to release memory between steps.
+- **3-layer lakehouse:** Bronze (parquet) → Silver (DuckDB) → Gold
+  (MySQL/CSV). Only curated BI-ready data is exported to Power BI.
+- **CSV fallback:** the Power BI build uses CSVs in `data/processed/` for
+  maximum portability across environments.
 
 ## License
 
